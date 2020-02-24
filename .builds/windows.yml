@@ -1,0 +1,21 @@
+image: archlinux
+packages:
+  - git
+  - go
+  - upx
+sources:
+  - https://github.com/delthas/image-check.git
+secrets:
+  - 63d7a0ac-2635-4d42-9709-efcd2cf74858 # ssh deploy key
+tasks:
+  - setup: |
+      cd image-check
+      git checkout -q $GIT_COMMIT_ID
+  - build: |
+      cd image-check
+      GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -v -o image-check.exe ./cmd/image-check
+      upx image-check.exe
+  - deploy: |
+      cd image-check
+      ssh -p 2222 -o StrictHostKeyChecking=no -q user@delthas.fr 'mkdir -p /srv/http/blog/image-check/windows/'
+      scp -P 2222 -o StrictHostKeyChecking=no -q image-check.exe user@delthas.fr:/srv/http/blog/image-check/windows/image-check.exe
